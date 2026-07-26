@@ -1,0 +1,209 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { 
+  title = "Lupyd: The Next Generation Social Platform", 
+  description = "Experience the future of social networking with Lupyd. Connect, share, and collaborate in a secure and personalized environment." 
+} = Astro.props;
+
+// Current path for active link highlight
+const currentPath = Astro.url.pathname;
+const cleanPath = currentPath.endsWith('/') && currentPath.length > 1 ? currentPath.slice(0, -1) : currentPath;
+
+const navLinks = [
+  { href: "/features", label: "Features" },
+  { href: "/experience", label: "Experience" },
+  { href: "/community", label: "Community" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/creator-tools", label: "Creator Tools" }
+];
+---
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-background text-foreground min-h-screen flex flex-col antialiased">
+    <header class="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-md">
+      <div class="container mx-auto flex h-16 items-center justify-between px-4 py-4 max-w-7xl">
+        <div class="flex items-center gap-2">
+          <a href="/" class="text-xl font-bold tracking-tight hover:opacity-85 transition-opacity" id="logo-link">
+            <span>Lupyd</span>
+          </a>
+        </div>
+        
+        <nav class="hidden md:flex gap-6">
+          {navLinks.map(({ href, label }) => {
+            const isActive = cleanPath === href;
+            return (
+              <a 
+                href={href} 
+                class={`text-sm font-medium transition-colors hover:text-foreground/80 ${isActive ? 'text-foreground border-b-2 border-foreground pb-1' : 'text-muted-foreground'}`}
+              >
+                {label}
+              </a>
+            );
+          })}
+        </nav>
+
+        <div class="flex items-center gap-4">
+          <!-- Mobile menu button -->
+          <button
+            class="md:hidden p-2 relative z-50 rounded-md hover:bg-muted/80 text-foreground transition-colors"
+            id="mobile-menu-btn"
+            aria-label="Toggle menu"
+            aria-expanded="false"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="transition-transform duration-200"
+              id="menu-icon"
+            >
+              <path class="line-1" d="M3 12h18" />
+              <path class="line-2" d="M3 6h18" />
+              <path class="line-3" d="M3 18h18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Dropdown Menu -->
+      <div id="mobile-menu" class="hidden fixed inset-0 z-40 md:hidden">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="mobile-menu-backdrop"></div>
+
+        <!-- Dropdown Content -->
+        <div class="absolute top-16 left-0 right-0 bg-background border-b border-border shadow-lg z-50">
+          <div class="container mx-auto py-6 px-4 flex flex-col space-y-4">
+            {navLinks.map(({ href, label }) => {
+              const isActive = cleanPath === href;
+              return (
+                <a
+                  href={href}
+                  class={`text-sm font-medium py-3 px-4 rounded-md transition-colors hover:bg-muted ${isActive ? 'bg-muted text-foreground font-semibold' : 'text-muted-foreground'}`}
+                >
+                  {label}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 flex flex-col relative z-10">
+      <slot />
+    </main>
+
+    <footer class="border-t border-border/40 bg-background/50 backdrop-blur-sm py-10 md:py-16 mt-auto">
+      <div class="container mx-auto px-4 max-w-7xl">
+        <div class="flex flex-col md:flex-row justify-between items-start gap-8">
+          <div class="space-y-4 max-w-md">
+            <a href="/" class="text-xl font-bold tracking-tight">Lupyd</a>
+            <p class="text-sm text-muted-foreground">
+              The next generation social platform for connecting, sharing, and collaborating.
+            </p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-8 sm:gap-16">
+            <div class="space-y-3">
+              <h4 class="text-sm font-semibold tracking-wider uppercase text-foreground">Platform</h4>
+              <ul class="space-y-2">
+                <li><a href="/features" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a></li>
+                <li><a href="/experience" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Experience</a></li>
+                <li><a href="/creator-tools" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Creator Tools</a></li>
+              </ul>
+            </div>
+            <div class="space-y-3">
+              <h4 class="text-sm font-semibold tracking-wider uppercase text-foreground">Community</h4>
+              <ul class="space-y-2">
+                <li><a href="/community" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Connections</a></li>
+                <li><a href="/privacy" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy & Security</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="mt-8 pt-8 border-t border-border/20 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p class="text-xs text-muted-foreground">
+            &copy; {new Date().getFullYear()} Lupyd. Developed with focus on security.
+          </p>
+          <div class="flex gap-4">
+            <a href="/privacy" class="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const backdrop = document.getElementById('mobile-menu-backdrop');
+      const menuIcon = document.getElementById('menu-icon');
+
+      if (mobileMenuBtn && mobileMenu && backdrop && menuIcon) {
+        let isOpen = false;
+
+        const toggleMenu = () => {
+          isOpen = !isOpen;
+          mobileMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+          
+          if (isOpen) {
+            mobileMenu.classList.remove('hidden');
+            // Change hamburger to X
+            menuIcon.innerHTML = '<path class="line-1" d="M18 6L6 18M6 6l12 12" />';
+            document.body.style.overflow = 'hidden';
+          } else {
+            mobileMenu.classList.add('hidden');
+            // Change back to hamburger
+            menuIcon.innerHTML = '<path class="line-1" d="M3 12h18" /><path class="line-2" d="M3 6h18" /><path class="line-3" d="M3 18h18" />';
+            document.body.style.overflow = '';
+          }
+        };
+
+        mobileMenuBtn.addEventListener('click', toggleMenu);
+        backdrop.addEventListener('click', toggleMenu);
+
+        // Clean up on navigate
+        document.addEventListener('astro:before-swap', () => {
+          isOpen = false;
+          mobileMenu.classList.add('hidden');
+          document.body.style.overflow = '';
+        });
+      }
+    </script>
+  </body>
+</html>
