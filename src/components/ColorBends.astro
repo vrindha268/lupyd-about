@@ -1,0 +1,367 @@
+---
+interface Props {
+  colors?: string[];
+  rotation?: number;
+  speed?: number;
+  scale?: number;
+  frequency?: number;
+  warpStrength?: number;
+  noise?: number;
+  transparent?: boolean;
+  autoRotate?: number;
+}
+
+const {
+  colors = ["#000000", "#ffffff", "#808080"],
+  rotation = 30,
+  speed = 0.15, // Made slower for a calmer, less distracting background
+  scale = 1.2,
+  frequency = 1.4,
+  warpStrength = 1.2,
+  noise = 0.05,
+  transparent = true,
+  autoRotate = 0,
+} = Astro.props;
+---
+
+<div
+  class="color-bends-container"
+  id="color-bends-root"
+  data-colors={JSON.stringify(colors)}
+  data-rotation={rotation}
+  data-speed={speed}
+  data-scale={scale}
+  data-frequency={frequency}
+  data-warp-strength={warpStrength}
+  data-noise={noise}
+  data-transparent={transparent ? "true" : "false"}
+  data-auto-rotate={autoRotate}
+>
+  <canvas style="width: 100%; height: 100%; display: block;" id="color-bends-canvas"></canvas>
+</div>
+
+<script>
+  const MAX_COLORS = 8;
+
+  const frag = `
+  precision highp float;
+  #define MAX_COLORS ${MAX_COLORS}
+  uniform vec2 uCanvas;
+  uniform float uTime;
+  uniform float uSpeed;
+  uniform vec2 uRot;
+  uniform int uColorCount;
+  uniform vec3 uColors[MAX_COLORS];
+  uniform int uTransparent;
+  uniform float uScale;
+  uniform float uFrequency;
+  uniform float uWarpStrength;
+  uniform float uNoise;
+  varying vec2 vUv;
+
+  void main() {
+    float t = uTime * uSpeed;
+    vec2 p = vUv * 2.0 - 1.0;
+    vec2 rp = vec2(p.x * uRot.x - p.y * uRot.y, p.x * uRot.y + p.y * uRot.x);
+    vec2 q = vec2(rp.x * (uCanvas.x / uCanvas.y), rp.y);
+    q /= max(uScale, 0.0001);
+    q /= 0.5 + 0.2 * dot(q, q);
+    q += 0.2 * cos(t) - 7.56;
+
+    vec3 col = vec3(0.0);
+    float a = 1.0;
+
+    if (uColorCount > 0) {
+      vec2 s = q;
+      vec3 sumCol = vec3(0.0);
+      float cover = 0.0;
+      for (int i = 0; i < MAX_COLORS; ++i) {
+        if (i >= uColorCount) break;
+        s -= 0.01;
+        vec2 r = sin(1.5 * (s.yx * uFrequency) + 2.0 * cos(s * uFrequency));
+        float m0 = length(r + sin(5.0 * r.y * uFrequency - 3.0 * t + float(i)) / 4.0);
+        float kBelow = clamp(uWarpStrength, 0.0, 1.0);
+        float kMix = pow(kBelow, 0.3); 
+        float gain = 1.0 + max(uWarpStrength - 1.0, 0.0);
+        vec2 disp = (r - s) * kBelow;
+        vec2 warped = s + disp * gain;
+        float m1 = length(warped + sin(5.0 * warped.y * uFrequency - 3.0 * t + float(i)) / 4.0);
+        float m = mix(m0, m1, kMix);
+        float w = 1.0 - exp(-6.0 / exp(6.0 * m));
+        sumCol += uColors[i] * w;
+        cover = max(cover, w);
+      }
+      col = clamp(sumCol, 0.0, 1.0);
+      a = uTransparent > 0 ? cover : 1.0;
+    } else {
+      vec2 s = q;
+      for (int k = 0; k < 3; ++k) {
+        s -= 0.01;
+        vec2 r = sin(1.5 * (s.yx * uFrequency) + 2.0 * cos(s * uFrequency));
+        float m0 = length(r + sin(5.0 * r.y * uFrequency - 3.0 * t + float(k)) / 4.0);
+        float kBelow = clamp(uWarpStrength, 0.0, 1.0);
+        float kMix = pow(kBelow, 0.3);
+        float gain = 1.0 + max(uWarpStrength - 1.0, 0.0);
+        vec2 disp = (r - s) * kBelow;
+        vec2 warped = s + disp * gain;
+        float m1 = length(warped + sin(5.0 * warped.y * uFrequency - 3.0 * t + float(k)) / 4.0);
+        float m = mix(m0, m1, kMix);
+        col[k] = 1.0 - exp(-6.0 / exp(6.0 * m));
+      }
+      a = uTransparent > 0 ? max(max(col.r, col.g), col.b) : 1.0;
+    }
+
+    if (uNoise > 0.0001) {
+      float n = fract(sin(dot(gl_FragCoord.xy + vec2(uTime), vec2(12.9898, 78.233))) * 43758.5453123);
+      col += (n - 0.5) * uNoise;
+      col = clamp(col, 0.0, 1.0);
+    }
+
+    vec3 rgb = (uTransparent > 0) ? col * a : col;
+    gl_FragColor = vec4(rgb, a);
+  }
+  `;
+
+  const vert = `
+  attribute vec2 position;
+  varying vec2 vUv;
+  void main() {
+    vUv = position * 0.5 + 0.5;
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+  `;
+
+  const parseColors = (colorList: string[]): Float32Array => {
+    const result = new Float32Array(MAX_COLORS * 3);
+    const arr = (colorList || []).filter(Boolean).slice(0, MAX_COLORS);
+    for (let i = 0; i < MAX_COLORS; i++) {
+      if (i < arr.length) {
+        const hex = arr[i].replace('#', '').trim();
+        const rgb =
+          hex.length === 3
+            ? [parseInt(hex[0] + hex[0], 16), parseInt(hex[1] + hex[1], 16), parseInt(hex[2] + hex[2], 16)]
+            : [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+        result[i * 3] = rgb[0] / 255;
+        result[i * 3 + 1] = rgb[1] / 255;
+        result[i * 3 + 2] = rgb[2] / 255;
+      } else {
+        result[i * 3] = 0;
+        result[i * 3 + 1] = 0;
+        result[i * 3 + 2] = 0;
+      }
+    }
+    return result;
+  };
+
+  (() => {
+    const container = document.getElementById('color-bends-root') as HTMLDivElement;
+    const canvas = document.getElementById('color-bends-canvas') as HTMLCanvasElement;
+    if (!container || !canvas) return;
+
+    const config = {
+      colors: JSON.parse(container.dataset.colors || '[]') as string[],
+      rotation: parseFloat(container.dataset.rotation || '30'),
+      speed: parseFloat(container.dataset.speed || '0.15'),
+      scale: parseFloat(container.dataset.scale || '1.2'),
+      frequency: parseFloat(container.dataset.frequency || '1.4'),
+      warpStrength: parseFloat(container.dataset.warpStrength || '1.2'),
+      noise: parseFloat(container.dataset.noise || '0.05'),
+      transparent: container.dataset.transparent === 'true',
+      autoRotate: parseFloat(container.dataset.autoRotate || '0'),
+    };
+
+    const gl = canvas.getContext('webgl', {
+      alpha: true,
+      antialias: false,
+      powerPreference: 'low-power' // Request low power profile
+    }) || (canvas.getContext('experimental-webgl', {
+      alpha: true,
+      antialias: false,
+      powerPreference: 'low-power'
+    }) as WebGLRenderingContext | null);
+
+    if (!gl) {
+      console.error('WebGL not supported');
+      return;
+    }
+
+    const compileShader = (type: number, source: string) => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+
+    const vs = compileShader(gl.VERTEX_SHADER, vert);
+    const fs = compileShader(gl.FRAGMENT_SHADER, frag);
+    if (!vs || !fs) return;
+
+    const program = gl.createProgram();
+    if (!program) return;
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Program link error:', gl.getProgramInfoLog(program));
+      gl.deleteProgram(program);
+      return;
+    }
+
+    gl.useProgram(program);
+
+    const vertices = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ]);
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    const positionLoc = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const uCanvasLoc = gl.getUniformLocation(program, 'uCanvas');
+    const uTimeLoc = gl.getUniformLocation(program, 'uTime');
+    const uSpeedLoc = gl.getUniformLocation(program, 'uSpeed');
+    const uRotLoc = gl.getUniformLocation(program, 'uRot');
+    const uColorCountLoc = gl.getUniformLocation(program, 'uColorCount');
+    const uColorsLoc = gl.getUniformLocation(program, 'uColors');
+    const uTransparentLoc = gl.getUniformLocation(program, 'uTransparent');
+    const uScaleLoc = gl.getUniformLocation(program, 'uScale');
+    const uFrequencyLoc = gl.getUniformLocation(program, 'uFrequency');
+    const uWarpStrengthLoc = gl.getUniformLocation(program, 'uWarpStrength');
+    const uNoiseLoc = gl.getUniformLocation(program, 'uNoise');
+
+    let width = 1;
+    let height = 1;
+
+    // HIGHLY OPTIMIZED RESOLUTION:
+    // Instead of using high-DPI resolution (dpr=2) which draws millions of pixels,
+    // we render at a fixed, lower resolution (dpr = 0.35).
+    // The GPU upscales it with bilinear filtering, keeping the look smooth and soft
+    // while reducing pixel operations by over 80%!
+    const handleResize = () => {
+      const w = container.clientWidth || 1;
+      const h = container.clientHeight || 1;
+      width = w;
+      height = h;
+      
+      const dpr = 0.35; // Downscaled for extreme lightweight rendering
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    };
+
+    handleResize();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(container);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    let startTime = performance.now();
+    let lastTime = startTime;
+    let animationFrameId: number;
+    let isVisible = true;
+
+    // Target 30fps rendering to cut CPU usage and draw operations in half compared to 60fps
+    const fpsInterval = 1000 / 30; 
+    let lastDrawTime = startTime;
+
+    const loop = (now: number) => {
+      if (!isVisible) {
+        animationFrameId = requestAnimationFrame(loop);
+        return;
+      }
+
+      animationFrameId = requestAnimationFrame(loop);
+
+      const elapsedDraw = now - lastDrawTime;
+      if (elapsedDraw < fpsInterval) return; // Throttle to target FPS
+      
+      lastDrawTime = now - (elapsedDraw % fpsInterval);
+
+      const elapsed = (now - startTime) / 1000;
+      lastTime = now;
+
+      gl.clearColor(0.0, 0.0, 0.0, config.transparent ? 0.0 : 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(program);
+
+      // Pass width and height of canvas drawing buffer
+      gl.uniform2f(uCanvasLoc, canvas.width, canvas.height);
+      gl.uniform1f(uTimeLoc, elapsed);
+      gl.uniform1f(uSpeedLoc, config.speed);
+
+      const deg = (config.rotation % 360) + config.autoRotate * elapsed;
+      const rad = (deg * Math.PI) / 180;
+      gl.uniform2f(uRotLoc, Math.cos(rad), Math.sin(rad));
+
+      const parsedColors = parseColors(config.colors);
+      const colorCount = Math.min((config.colors || []).filter(Boolean).length, MAX_COLORS);
+      gl.uniform1i(uColorCountLoc, colorCount);
+      gl.uniform3fv(uColorsLoc, parsedColors);
+
+      gl.uniform1i(uTransparentLoc, config.transparent ? 1 : 0);
+      gl.uniform1f(uScaleLoc, config.scale);
+      gl.uniform1f(uFrequencyLoc, config.frequency);
+      gl.uniform1f(uWarpStrengthLoc, config.warpStrength);
+      gl.uniform1f(uNoiseLoc, config.noise);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.enableVertexAttribArray(positionLoc);
+      gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    };
+
+    animationFrameId = requestAnimationFrame(loop);
+
+    // PAUSE LOOP WHEN ELEMENT IS OUT OF VIEW (IntersectionObserver)
+    // Stops drawing when page is scrolled down past the fold
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          isVisible = entry.isIntersecting;
+        });
+      }, { threshold: 0.1 });
+      observer.observe(container);
+    }
+
+    // PAUSE LOOP WHEN TAB IS INACTIVE (Visibility API)
+    const handleVisibilityChange = () => {
+      isVisible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Clean up WebGL resources when leaving page (optional for Astro MPA, but good practice)
+    document.addEventListener('astro:before-swap', () => {
+      cancelAnimationFrame(animationFrameId);
+      if (resizeObserver) resizeObserver.disconnect();
+      if (observer) observer.disconnect();
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      gl.deleteBuffer(positionBuffer);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      gl.deleteProgram(program);
+    });
+  })();
+</script>
