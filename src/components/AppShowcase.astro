@@ -1,0 +1,259 @@
+---
+// AppShowcase.astro
+// Clean 3+2 Screenshot Grid with Metallic Background, Blur, and Animated Vertical Flowing Shine
+
+const topRowScreenshots = [
+  {
+    id: "create-post",
+    src: "/screenshots/create-post.png",
+    alt: "Lupyd Create Post Interface"
+  },
+  {
+    id: "group-chat",
+    src: "/screenshots/group-chat.png",
+    alt: "Lupyd Group Chat Interface"
+  },
+  {
+    id: "direct-messages",
+    src: "/screenshots/direct-messages.png",
+    alt: "Lupyd Direct Messages Interface"
+  }
+];
+
+const bottomRowScreenshots = [
+  {
+    id: "saved-posts",
+    src: "/screenshots/saved-posts.png",
+    alt: "Lupyd Saved Posts Interface"
+  },
+  {
+    id: "privacy-settings",
+    src: "/screenshots/privacy-settings.png",
+    alt: "Lupyd Privacy Settings Interface"
+  }
+];
+
+const allScreenshots = [...topRowScreenshots, ...bottomRowScreenshots];
+---
+
+<section 
+  id="app-showcase-section" 
+  class="w-full py-8 my-8 md:my-12"
+>
+  <div class="container mx-auto px-4 max-w-7xl">
+    <!-- Outlined Container Box with Custom Metallic Background, Blur & Animated Vertical Shine -->
+    <div class="relative w-full rounded-2xl border-2 border-border/80 overflow-hidden shadow-2xl p-5 md:p-8">
+      
+      <!-- Custom Background Image Layer with Blur (Applied ONLY to this screenshot section) -->
+      <div 
+        class="absolute inset-0 bg-cover bg-center filter blur-[4px] scale-105 opacity-70 dark:opacity-85 pointer-events-none transition-all duration-700"
+        style="background-image: url('/screenshots-bg.jpg');"
+      ></div>
+
+      <!-- Dark Glass Tint Overlay to ensure content legibility -->
+      <div class="absolute inset-0 bg-background/50 dark:bg-black/55 backdrop-blur-[2px] pointer-events-none"></div>
+
+      <!-- Animated Shining Sweep Layer (Flows continuously up-to-down & down-to-up) -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="shine-sweep absolute left-0 right-0 h-48 bg-gradient-to-b from-transparent via-white/20 dark:via-cyan-100/25 to-transparent blur-md"></div>
+      </div>
+
+      <!-- Content Grid Layer -->
+      <div class="relative z-10">
+        <!-- Top Row: 3 Screenshots -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+          {topRowScreenshots.map((item, index) => (
+            <div
+              data-index={index}
+              class="showcase-card group relative rounded-xl border border-border/60 bg-card/90 backdrop-blur-md p-1.5 shadow-md transition-all duration-300 cursor-pointer hover:border-primary hover:shadow-2xl hover:scale-[1.02] z-0 hover:z-10 overflow-hidden"
+            >
+              <div class="rounded-lg overflow-hidden border border-border/40 aspect-[16/10] bg-background">
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  loading="eager"
+                  class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <!-- Bottom Row: 2 Screenshots Centered in the Middle -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6 max-w-4xl mx-auto mt-5 md:mt-6">
+          {bottomRowScreenshots.map((item, index) => (
+            <div
+              data-index={index + 3}
+              class="showcase-card group relative rounded-xl border border-border/60 bg-card/90 backdrop-blur-md p-1.5 shadow-md transition-all duration-300 cursor-pointer hover:border-primary hover:shadow-2xl hover:scale-[1.02] z-0 hover:z-10 overflow-hidden"
+            >
+              <div class="rounded-lg overflow-hidden border border-border/40 aspect-[16/10] bg-background">
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  loading="eager"
+                  class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Perfectly Centered Full Clarity Lightbox Modal -->
+  <div 
+    id="showcase-lightbox" 
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 md:p-8 opacity-0 pointer-events-none transition-all duration-300"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Screenshot Lightbox"
+    style="display: none;"
+  >
+    <!-- Close Button -->
+    <button
+      id="lightbox-close"
+      type="button"
+      class="absolute top-5 right-5 z-50 p-3 rounded-full bg-black/60 border border-white/20 text-white hover:bg-black/90 hover:scale-110 transition-all cursor-pointer shadow-2xl"
+      aria-label="Close Lightbox"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <!-- Modal Content Box: Centered Exactly in the Viewport Center -->
+    <div class="relative max-w-5xl w-full max-h-[85vh] flex items-center justify-center mx-auto my-auto p-2">
+      <div class="rounded-2xl overflow-hidden border border-white/20 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] bg-card/90 backdrop-blur-xl flex items-center justify-center">
+        <img
+          id="lightbox-img"
+          src=""
+          alt="Full clarity desktop screenshot"
+          class="max-w-full max-h-[80vh] w-auto h-auto object-contain block mx-auto my-auto"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Up-and-Down Continuous Flowing Shine Animation */
+  @keyframes shineVerticalFlow {
+    0% {
+      top: -30%;
+      opacity: 0.2;
+    }
+    50% {
+      top: 100%;
+      opacity: 0.8;
+    }
+    100% {
+      top: -30%;
+      opacity: 0.2;
+    }
+  }
+
+  .shine-sweep {
+    animation: shineVerticalFlow 6s ease-in-out infinite;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const images = [
+      "/screenshots/create-post.png",
+      "/screenshots/group-chat.png",
+      "/screenshots/direct-messages.png",
+      "/screenshots/saved-posts.png",
+      "/screenshots/privacy-settings.png"
+    ];
+
+    let activeIndex = -1;
+    const cards = Array.from(document.querySelectorAll(".showcase-card"));
+    const section = document.getElementById("app-showcase-section");
+    const lightbox = document.getElementById("showcase-lightbox");
+    const lightboxImg = document.getElementById("lightbox-img");
+    const lightboxClose = document.getElementById("lightbox-close");
+
+    function highlightCard(idx) {
+      cards.forEach((card, i) => {
+        if (i === idx) {
+          card.classList.add("border-primary", "shadow-xl", "scale-[1.03]", "z-10");
+          card.classList.remove("border-border/60");
+        } else {
+          card.classList.remove("border-primary", "shadow-xl", "scale-[1.03]", "z-10");
+          card.classList.add("border-border/60");
+        }
+      });
+    }
+
+    // Highlight card when moving cursor over them one by one
+    cards.forEach((card) => {
+      const idx = parseInt(card.getAttribute("data-index") || "0", 10);
+      card.addEventListener("mouseenter", () => {
+        activeIndex = idx;
+        highlightCard(idx);
+      });
+      card.addEventListener("click", () => {
+        openLightbox(idx);
+      });
+    });
+
+    // Scroll Observer: highlight cards sequentially as user scrolls through the section
+    function handleScroll() {
+      if (!section) return;
+      const rect = section.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      if (rect.top <= vh && rect.bottom >= 0) {
+        const scrolled = vh - rect.top;
+        const progress = Math.max(0, Math.min(1, scrolled / (rect.height + vh * 0.2)));
+        const targetIdx = Math.min(images.length - 1, Math.floor(progress * images.length));
+        if (targetIdx !== activeIndex) {
+          activeIndex = targetIdx;
+          highlightCard(targetIdx);
+        }
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    function openLightbox(idx) {
+      if (!lightbox || !lightboxImg) return;
+      lightboxImg.src = images[idx];
+      lightbox.style.display = "flex";
+      lightbox.classList.remove("pointer-events-none");
+      
+      requestAnimationFrame(() => {
+        lightbox.classList.remove("opacity-0");
+        lightbox.classList.add("opacity-100");
+      });
+      
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeLightbox() {
+      if (!lightbox) return;
+      lightbox.classList.remove("opacity-100");
+      lightbox.classList.add("opacity-0");
+      lightbox.classList.add("pointer-events-none");
+      
+      setTimeout(() => {
+        lightbox.style.display = "none";
+        document.body.style.overflow = "";
+      }, 300);
+    }
+
+    if (lightboxClose) lightboxClose.addEventListener("click", closeLightbox);
+    if (lightbox) {
+      lightbox.addEventListener("click", (e) => {
+        if (e.target === lightbox || e.target.classList.contains("flex")) closeLightbox();
+      });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeLightbox();
+    });
+  })();
+</script>
