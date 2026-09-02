@@ -4,18 +4,18 @@
 
 const topRowScreenshots = [
   {
-    id: "create-post",
-    src: "/screenshots/create-post.png",
-    alt: "Lupyd Create Post Interface"
+    id: "home-feed",
+    src: "/screenshots/home-feed.webp",
+    alt: "Lupyd Main Feed Interface"
   },
   {
     id: "group-chat",
-    src: "/screenshots/group-chat.png",
+    src: "/screenshots/group-chat.webp",
     alt: "Lupyd Group Chat Interface"
   },
   {
     id: "direct-messages",
-    src: "/screenshots/direct-messages.png",
+    src: "/screenshots/direct-messages.webp",
     alt: "Lupyd Direct Messages Interface"
   }
 ];
@@ -23,12 +23,12 @@ const topRowScreenshots = [
 const bottomRowScreenshots = [
   {
     id: "saved-posts",
-    src: "/screenshots/saved-posts.png",
+    src: "/screenshots/saved-posts.webp",
     alt: "Lupyd Saved Posts Interface"
   },
   {
     id: "privacy-settings",
-    src: "/screenshots/privacy-settings.png",
+    src: "/screenshots/privacy-settings.webp",
     alt: "Lupyd Privacy Settings Interface"
   }
 ];
@@ -47,7 +47,7 @@ const allScreenshots = [...topRowScreenshots, ...bottomRowScreenshots];
       <!-- Custom Background Image Layer with Blur (Applied ONLY to this screenshot section) -->
       <div 
         class="absolute inset-0 bg-cover bg-center filter blur-[4px] scale-105 opacity-70 dark:opacity-85 pointer-events-none transition-all duration-700"
-        style="background-image: url('/screenshots-bg.jpg');"
+        style="background-image: url('/screenshots-bg.webp');"
       ></div>
 
       <!-- Dark Glass Tint Overlay to ensure content legibility -->
@@ -163,11 +163,11 @@ const allScreenshots = [...topRowScreenshots, ...bottomRowScreenshots];
 <script is:inline>
   (() => {
     const images = [
-      "/screenshots/create-post.png",
-      "/screenshots/group-chat.png",
-      "/screenshots/direct-messages.png",
-      "/screenshots/saved-posts.png",
-      "/screenshots/privacy-settings.png"
+      "/screenshots/home-feed.webp",
+      "/screenshots/group-chat.webp",
+      "/screenshots/direct-messages.webp",
+      "/screenshots/saved-posts.webp",
+      "/screenshots/privacy-settings.webp"
     ];
 
     let activeIndex = -1;
